@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>台積電股價追蹤系統</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f6f6f6; }
+        h1 { color: #003366; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input, button { padding: 6px; margin-top: 5px; }
+        table, th, td {
+            border: 1px solid #444;
+            border-collapse: collapse;
+            padding: 6px 10px;
+            background-color: #fff;
+        }
+        table { margin-top: 20px; width: 100%; }
+    </style>
+</head>
+<body>
+<h1>📈 台積電（2330.TW）股價追蹤系統</h1>
+
+<form id="priceForm">
+    <label>📅 日期: <input type="date" id="date" required></label>
+    <label>💰 收盤價: <input type="number" id="price" step="0.01" required></label>
+    <input type="hidden" id="item_name" value="台積電">
+    <button type="submit">➕ 新增股價紀錄</button>
+</form>
+
+<hr>
+
+<label>🔍 查詢關鍵字（例如：台積電）: <input type="text" id="searchKeyword" placeholder="預設顯示全部"></label>
+<button onclick="fetchPrices()">查詢</button>
+
+<table id="priceTable">
+    <thead>
+    <tr>
+        <th>日期</th>
+        <th>公司名稱</th>
+        <th>收盤價（元）</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+    // 提交表單：新增資料
+    document.getElementById('priceForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const date = document.getElementById('date').value;
+        const item_name = document.getElementById('item_name').value;
+        const price = parseFloat(document.getElementById('price').value);
+
+        const response = await fetch('http://localhost:5000/add_price', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date, item_name, price })
+        });
+
+        const result = await response.json();
+        alert(result.message || '資料新增成功');
+        fetchPrices(); // 自動刷新查詢結果
+    });
+
+    // 查詢功能
+    async function fetchPrices() {
+        const keyword = document.getElementById('searchKeyword').value;
+        const response = await fetch(`http://localhost:5000/get_prices?keyword=${keyword}`);
+        const data = await response.json();
+
+        const tbody = document.querySelector('#priceTable tbody');
+        tbody.innerHTML = '';
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${row.date}</td><td>${row.item_name}</td><td>${row.price}</td>`;
+            tbody.appendChild(tr);
+        });
+    }
+
+    window.onload = fetchPrices; // 頁面載入時查詢所有資料
+</script>
+</body>
+</html>
